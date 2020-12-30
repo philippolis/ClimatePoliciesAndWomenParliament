@@ -1,5 +1,7 @@
 install.packages("countrycode")
 library(countrycode)
+library(tidyr)
+library(ggplot2)
 
 # Data wrangling Climate Policy Index ----
 ClimatePolicyIndex_data <- read.csv("ClimatePolicyIndex.csv")
@@ -102,28 +104,98 @@ for(i in 1:nrow(data)) {
 data <- data %>% 
   mutate(CRI_ranking = as.numeric(CRI_ranking))
 
-# Visualising relationships
-## Overall relationship
+## Cleaning up the environment
+rm(ClimatePolicyIndex_data)
+rm(gw2015_final)
+rm(gw2016_final)
+rm(gw2017_final)
+rm(gw2018_final)
+rm(gw2019_final)
+rm(i)
+
+# Joining the Climate risk historical data with climate index data ----
+data_historical <- subset(ClimatePolicyIndex_data_small, select = c(Country, Index)) %>%
+  full_join(RiskIndex_data, by = "Country")
+
+## Adding a column with region
+for(i in 1:nrow(data_historical)) {
+  data_historical[i,"Region"] <- countryname(data_historical[i,"Country"], destination = "region", warn = TRUE)
+}
+
+# Visualising relationships ----
+## Risk Index data from 2015 to 2018
+### Overall relationship
 ggplot(data = data) +
   geom_smooth(method = "lm", aes(x = CRI_ranking, y = Policy_perf))
 
-## Relationship subdivided by Region
-### Shows stronger trends in North America and Middle East & North Africa
+### Relationship subdivided by Region
+#### Shows stronger trends in North America and Middle East & North Africa
 ggplot(data = data) +
   geom_smooth(method = "lm", aes(x = CRI_ranking, y = Policy_perf, color = Region), se = F)
 
-## Relationship subdivided by Year
-### Shows that relationship between CRI and Policy_perf gets stronger over the years, 
-### in the sense that countries most affected are the least climate-friendly
+### Relationship subdivided by Year
+#### Shows that relationship between CRI and Policy_perf gets stronger over the years, 
+#### in the sense that countries most affected are the least climate-friendly
 ggplot(data = data) +
   geom_smooth(method = "lm", aes(x = CRI_ranking, y = Policy_perf, color = factor(Year)), se = F)
 
-## Relationship subdivided by Year and Region
+### Relationship subdivided by Year and Region
 ggplot(data = data) +
   geom_smooth(method = "lm", aes(x = CRI_ranking, y = Policy_perf, color = factor(Year)), se = F) +
   facet_wrap(~ Region)
 
-## Relationship subdivided by Region and Year
+### Relationship subdivided by Region and Year
 ggplot(data = data) +
   geom_smooth(method = "lm", aes(x = CRI_ranking, y = Policy_perf, color = Region), se = F) +
   facet_wrap(~ factor(Year))
+
+## Historical risk index data from 1999 - 2018
+### Fatalities per 100000
+ggplot(data = data_historical) +
+  geom_point(aes(x = FatalitiesPer100000_Rank, y = Index)) +
+  geom_smooth(method = "lm", aes(x = FatalitiesPer100000_Rank, y = Index))
+
+#### By Region
+ggplot(data = data_historical) +
+  geom_point(aes(x = FatalitiesPer100000_Rank, y = Index)) +
+  geom_smooth(method = "lm", aes(x = FatalitiesPer100000_Rank, y = Index)) +
+  facet_wrap(~ Region)
+
+
+### Fatalities total
+ggplot(data = data_historical) +
+  geom_point(aes(x = FatalitiesTotal_Rank, y = Index)) +
+  geom_smooth(method = "lm", aes(x = FatalitiesTotal_Rank, y = Index))
+
+#### By Region
+ggplot(data = data_historical) +
+  geom_point(aes(x = FatalitiesTotal_Rank, y = Index)) +
+  geom_smooth(method = "lm", aes(x = FatalitiesTotal_Rank, y = Index)) +
+  facet_wrap(~ Region)
+
+### Losses per GDP
+ggplot(data = data_historical) +
+  geom_point(aes(x = LossesPerGDP_Rank, y = Index)) +
+  geom_smooth(method = "lm", aes(x = LossesPerGDP_Rank, y = Index))
+
+#### By Region
+ggplot(data = data_historical) +
+  geom_point(aes(x = LossesPerGDP_Rank, y = Index)) +
+  geom_smooth(method = "lm", aes(x = LossesPerGDP_Rank, y = Index)) +
+  facet_wrap(~ Region)
+
+### Losses per GDP
+ggplot(data = data_historical) +
+  geom_point(aes(x = LossesTotal_Rank, y = Index)) +
+  geom_smooth(method = "lm", aes(x = LossesTotal_Rank, y = Index))
+
+#### By Region
+ggplot(data = data_historical) +
+  geom_point(aes(x = LossesTotal_Rank, y = Index)) +
+  geom_smooth(method = "lm", aes(x = LossesTotal_Rank, y = Index)) +
+  facet_wrap(~ Region)
+
+### Get a summary of the risk of each region
+data_historical %>%
+  group_by(Region) %>%
+  summarise(Mean_Risk = mean(CRI_score))
