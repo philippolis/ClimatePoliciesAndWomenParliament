@@ -2,6 +2,25 @@ install.packages("countrycode")
 library(countrycode)
 library(tidyr)
 library(ggplot2)
+library(dplyr)
+
+# Data wrangling Women in Parliament ----
+WomenParliament_data <- read.csv("WomenParliament.csv", sep = ";")
+
+## Creating a new column with overall share of women
+### Replacing NA with 0 in lower house columns
+WomenParliament_data[is.na(WomenParliament_data)] <- 0
+
+WomenParliament_data$Share <- (WomenParliament_data$UpperOrSenate_Women + WomenParliament_data$LowerOrSingleHouse_Women)/
+  (WomenParliament_data$UpperOrSenate_Seats + WomenParliament_data$LowerOrSingleHouse_Seats)
+
+## Only selecting variables of interest
+WomenParliament_data_small <- WomenParliament_data %>% select(Country, Share)
+
+## Equalizing Country column
+for(i in 1:nrow(WomenParliament_data_small)) {
+  WomenParliament_data_small[i,"Country"] <- countryname(WomenParliament_data_small[i,"Country"], destination = "iso.name.en", warn = TRUE)
+}
 
 # Data wrangling Climate Policy Index ----
 ClimatePolicyIndex_data <- read.csv("ClimatePolicyIndex.csv")
@@ -20,6 +39,15 @@ for(i in 1:nrow(ClimatePolicyIndex_data_small)) {
 
 ## Adding column with Years
 ClimatePolicyIndex_data_small["Year"] <- rep(2020, nrow(ClimatePolicyIndex_data_small))
+
+# Data Wrangling Median Income
+MedianIncome_data <- read.csv("MedianIncome.csv")
+
+for(i in 1:nrow(MedianIncome_data)) {
+  MedianIncome_data[i,"ï..country"] <- countryname(MedianIncome_data[i,"ï..country"], destination = "iso.name.en", warn = TRUE)
+}
+
+names(MedianIncome_data)[names(MedianIncome_data)=="ï..country"] <- "Country"
 
 # Data Wrangling Climate Risk Index ----
 ## Equalizing Country naming
@@ -122,6 +150,14 @@ for(i in 1:nrow(data_historical)) {
   data_historical[i,"Region"] <- countryname(data_historical[i,"Country"], destination = "region", warn = TRUE)
 }
 
+# Joining Climate Risk historical and Climate Index with Median Income data
+data_historical <- data_historical %>%
+  full_join(MedianIncome_data, by = "Country")
+
+# Joining Risk Policy Income Data with Women in Parliament data
+data_historical <- data_historical %>%
+  full_join(WomenParliament_data_small, by = "Country")
+
 # Visualising relationships ----
 ## Risk Index data from 2015 to 2018
 ### Overall relationship
@@ -199,3 +235,29 @@ ggplot(data = data_historical) +
 data_historical %>%
   group_by(Region) %>%
   summarise(Mean_Risk = mean(CRI_score))
+
+## Median Income Data
+### Median per Capita Income and Policy Performance
+ggplot(data = data_historical) +
+  geom_point(aes(x = medianPerCapitaIncome, y = Index)) +
+  geom_smooth(method = "lm", aes(x = medianPerCapitaIncome, y = Index), se = T)
+
+### Is anything significant? No
+summary(lm(data = data_historical, Index ~ medianPerCapitaIncome + FatalitiesPer100000_Rank + pop2020))
+
+### Risk Index by medianPerCapitaIncome
+summary(lm(data = data_historical, CRI_score ~ medianPerCapitaIncome))
+
+summary(lm(data = data_historical, Index ~ pop2020))
+
+## Quick correlation table
+pairs(subset(data_historical, select = c(Index, CRI_score, FatalitiesPer100000_Rank, 
+                                       LossesPerGDP_Rank, medianPerCapitaIncome, 
+                                       pop2020, Share))) # Only Share and Index seem to be correlated
+
+## Women in Parliament and Index
+ggplot(data = data_historical, aes(x = Share, y = Index)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+
