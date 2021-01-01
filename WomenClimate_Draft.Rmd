@@ -18,10 +18,46 @@ knitr::opts_chunk$set(warning=FALSE, message=FALSE, echo = FALSE, dev = "cairo_p
 
 ```{r Libraries}
 # Loading the libraries
+library(ggplot2)
 library(rstanarm)
 library(extrafont)
 loadfonts()
 ```
+
+```{r Loading the Data}
+data <- read.csv("WomenClimate_Data.csv")
+```
+
+# Introduction
+
+Climate change is what is commonly referred to as a wicked problem - however a wicked problem the solution of which is arguably of another magnitude. This makes it necessary to rethink society from the bottom up. Feminism is a school of thought that does just this. One approach to think about Gender in climate politics is to look at how well different countries perform in issuing climate change policies dependent on what percentage of women are in positions of power, approximated here in parliament.
+
+To research this issue, the following analysis will assess the following hypotheses.
+
+H\textsubscript{0}: The share of women in national parliaments **has no** influence on the climate policy performance of a country.
+
+H\textsubscript{a}: The share of women in national parliaments **has** influence on the climate policy performance of a country.
+
+This analysis combines data from the Inter-Parliamentary Union on women in parliaments [@inter-parliamentaryunionWomenParliamentsWorld2021] and data from the Climate Change Performance Index published inter alia by Germanwatch [@burckClimateChangePerformance2017, @burckClimateChangePerformance2018, @burckClimateChangePerformance2019]. For the analysis, data for the years 2018 to 2020 was combined and only the Policy Performance part of the Climate Change Performance Index was used, as this is were individual influence is greatest.
+
+In the analysis, the relationship between the share of women in national parliaments and climate policy performance is additionally corrected for the years 2018, 2019 and 2020 and for world region.
+
+The following diagram shows that from a first visual assessment there seems to be a moderately strong, positive correlation between the percentage of women in parliament and policy performance.
+
+```{r Bivariate plot}
+ggplot(data = data) +
+  geom_point(aes(x = PercentWomen, y = PolicyScore), alpha = 0.5) +
+  geom_smooth(aes(x = PercentWomen, y = PolicyScore), method = "lm") +
+  xlab("Share of Women in Parliament") +
+  ylab("Climate Policy Index") +
+  scale_x_continuous(labels = scales::percent_format(accuracy = 1), 
+                     breaks = scales::pretty_breaks(n = 6)) +
+  ggtitle("Share of Women in Parliament and Climate Policy Index") +
+  theme(
+     plot.title = element_text(size = 11, face = "bold")
+  )
+```
+
 
 
 ## R Markdown
