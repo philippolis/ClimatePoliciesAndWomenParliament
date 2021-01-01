@@ -24,6 +24,7 @@ library(ggplot2)
 library(rstanarm)
 library(dplyr)
 library(tidyr)
+library(bayesplot)
 library(extrafont)
 loadfonts()
 ```
@@ -48,7 +49,7 @@ In the analysis, the relationship between the share of women in national parliam
 
 The following diagram shows that from a first visual assessment there seems to be a moderately strong, positive correlation between the percentage of women in parliament and policy performance. However, there also seems to be a considerable error-term, which is why Bayesian regression analysis can help us determine a credible interval of the underlying slope-parameter.
 
-```{r Bivariate plot, message=FALSE, warning=FALSE}
+```{r Bivariate plot, message=FALSE, warning=FALSE, fig.align = "center"}
 ggplot(data = data) +
   geom_point(aes(x = PercentWomen, y = PolicyScore), alpha = 0.5) +
   geom_smooth(aes(x = PercentWomen, y = PolicyScore), method = "lm", color = "#0072B2") +
@@ -66,7 +67,7 @@ ggplot(data = data) +
 # Setting priors
 The academic literature has shown on various occasions that "women express slightly greater concern about climate change than do men"[@mccrightEffectsGenderClimate2010]. This is why, we can assume a positive relationship between the percentage of women in parliament and policy performance. This means, we can set our prior to a Normal[0.5, 0.5]-probability distribution as can be seen in the chart below.
 
-```{r Prior distribution, message=FALSE, warning=FALSE}
+```{r Prior distribution, message=FALSE, warning=FALSE, fig.align= "center"}
 # Histogram of PercentWomen-prior of normal[0.5,0.5]
 
 p1 <- data.frame(dist = rnorm(100000, 0.5, 0.5))
@@ -92,7 +93,11 @@ Likewise, because our data is taken from an Index that informs over the position
 Thus, the model will assess the influence of female representativity on Climate Policy Performance, without controlling for region or year.
 
 # Results
-```{r Fitting the model, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+Fitting the model with a Normal[0.5, 0.5]-probability distribution[^2] yields the following results. The coefficient is positive, indicating that a one percentage-point increase of women in a given parliament is associated with a predicted 0.89 point increase in the climate policy index. The 90% credible interval for this coefficient extends from 0.61 points to 1.18 points.
+
+[^2]: The scale is automatically adjusted, so that the adjusted prior is a Normal[0.5, 123].
+
+```{r Fitting the model, message=FALSE, warning=FALSE, include=FALSE}
 
 stan_model2 <- stan_glm(data = data, PolicyScore ~ PercentWomen, 
                         prior = normal(location = 0.5, scale = 0.5, autoscale = TRUE))
@@ -114,6 +119,34 @@ tidy(stan_model2, conf.int = TRUE, conf.level = 0.90) %>%
 | Intercept        | 27.870   | 4.781              | 19.845       | 35.822       |
 | Percentage Women | 88.955   | 17.437             | 60.631       | 118.238      |
 
+Additionally, we can visualize the 90% credible interval as a probability distribution.
+
+```{r Posterior Distribution, message=FALSE, warning=FALSE, fig.align="center"}
+mcmc_areas(stan_model2,
+           pars = "PercentWomen",
+           prob = 0.90) + 
+  ggplot2::labs(
+    title = "Posterior Distribution for Percent Women in Parliament",
+    subtitle = "90% Credible Intervals")
+```
+
+The R²-statistic can give us more information on the predictive value of the model. It shows us that the model typically explains between 8% and 18% of the variance in climate policy performance.
+
+```{r R-squared, echo=FALSE, message=FALSE, warning=FALSE, fig.align="center"}
+# Visualising the R²-distribution
+ggplot(data = data.frame(bayes_R2(stan_model2))) + 
+  geom_histogram(aes(x=bayes_R2.stan_model2.), size = 1, color = "#0072B2", fill = "white") + 
+  labs(title="R²-Statistic",
+       x="Variance in Policy Performance explained by Model", 
+       y="Probability") +
+  scale_x_continuous(labels = scales::percent_format(accuracy = 1), 
+                     breaks = scales::pretty_breaks(n = 6)) +
+  theme(
+    plot.title = element_text(size = 11, face = "bold"),
+    text=element_text(size = 11),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank())
+```
 
 
 

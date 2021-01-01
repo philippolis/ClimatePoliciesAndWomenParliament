@@ -45,7 +45,7 @@ tidy(stan_model1, conf.int = TRUE, conf.level = 0.90) %>%
          `Standard Deviation` = std.error, 
          `Lower 90% CI` = conf.low, `Upper 90% CI` = conf.high) # Credible Intervals for Year and Region cross 0
 
-## Model with informative priors
+## Model with informative priors ----
 ### Histogram of PercentWomen-prior of normal[0.5,0.5]
 
 p1 <- data.frame(dist = rnorm(100000, 0.5, 0.5))
@@ -73,3 +73,36 @@ tidy(stan_model2, conf.int = TRUE, conf.level = 0.90) %>%
   rename(Term = term, Estimate = estimate,
          `Standard Deviation` = std.error, 
          `Lower 90% CI` = conf.low, `Upper 90% CI` = conf.high)
+
+### Getting the adjusted scale with the priors
+prior_summary(stan_model2)
+
+### Visualising the posterior distribution of Percent Women
+mcmc_areas(stan_model2,
+           pars = "PercentWomen",
+           prob = 0.90) + 
+  ggplot2::labs(
+    title = "Posterior Distribution for Percent Women in Parliament",
+    subtitle = "90% Credible Intervals")
+
+## Getting the R² Statistic
+ss_res2 <- var(residuals(stan_model2))
+ss_total2 <- var(fitted(stan_model2)) + var(residuals(stan_model2))
+1- (ss_res2 / ss_total2)
+
+### Visualising the R²-distribution
+ggplot(data = data.frame(bayes_R2(stan_model2))) + 
+  geom_histogram(aes(x=bayes_R2.stan_model2.), size = 1, color = "#0072B2", fill = "white") + 
+  labs(title="R²-Statistic",
+       x="Variance in Policy Performance explained by Model", 
+       y="Probability") +
+  scale_x_continuous(labels = scales::percent_format(accuracy = 1), 
+                     breaks = scales::pretty_breaks(n = 6)) +
+  theme(
+    plot.title = element_text(size = 11, face = "bold"),
+    text=element_text(size = 11),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank())
+  )
+
+
