@@ -9,6 +9,8 @@ output:
     latex_engine: xelatex
     fig_width: 6
     fig_height: 4
+mainfont: Calibri Light
+fontsize: 12pt
 bibliography: References.json
 ---
 
@@ -20,6 +22,8 @@ knitr::opts_chunk$set(warning=FALSE, message=FALSE, echo = FALSE, dev = "cairo_p
 # Loading the libraries
 library(ggplot2)
 library(rstanarm)
+library(dplyr)
+library(tidyr)
 library(extrafont)
 loadfonts()
 ```
@@ -42,40 +46,77 @@ This analysis combines data from the Inter-Parliamentary Union on women in parli
 
 In the analysis, the relationship between the share of women in national parliaments and climate policy performance is additionally corrected for the years 2018, 2019 and 2020 and for world region.
 
-The following diagram shows that from a first visual assessment there seems to be a moderately strong, positive correlation between the percentage of women in parliament and policy performance.
+The following diagram shows that from a first visual assessment there seems to be a moderately strong, positive correlation between the percentage of women in parliament and policy performance. However, there also seems to be a considerable error-term, which is why Bayesian regression analysis can help us determine a credible interval of the underlying slope-parameter.
 
-```{r Bivariate plot}
+```{r Bivariate plot, message=FALSE, warning=FALSE}
 ggplot(data = data) +
   geom_point(aes(x = PercentWomen, y = PolicyScore), alpha = 0.5) +
-  geom_smooth(aes(x = PercentWomen, y = PolicyScore), method = "lm") +
+  geom_smooth(aes(x = PercentWomen, y = PolicyScore), method = "lm", color = "#0072B2") +
   xlab("Share of Women in Parliament") +
   ylab("Climate Policy Index") +
   scale_x_continuous(labels = scales::percent_format(accuracy = 1), 
                      breaks = scales::pretty_breaks(n = 6)) +
   ggtitle("Share of Women in Parliament and Climate Policy Index") +
   theme(
-     plot.title = element_text(size = 11, face = "bold")
+     plot.title = element_text(size = 11, face = "bold"),
+     text=element_text(size = 11)
+  )
+```
+
+# Setting priors
+The academic literature has shown on various occasions that "women express slightly greater concern about climate change than do men"[@mccrightEffectsGenderClimate2010]. This is why, we can assume a positive relationship between the percentage of women in parliament and policy performance. This means, we can set our prior to a Normal[0.5, 0.5]-probability distribution as can be seen in the chart below.
+
+```{r Prior distribution, message=FALSE, warning=FALSE}
+# Histogram of PercentWomen-prior of normal[0.5,0.5]
+
+p1 <- data.frame(dist = rnorm(100000, 0.5, 0.5))
+
+ggplot(p1) + geom_density(aes(x=dist), size = 1, color = "#0072B2") + 
+  labs(title="Prior for Percentage of Women in Parliament",
+       x="Beta value", 
+       y="Probability") +
+  scale_x_continuous(breaks=seq(-5,3,1), limits = c(-2.5, 2.5)) +
+  theme(
+    plot.title = element_text(size = 11, face = "bold"),
+    text=element_text(size = 11)
   )
 ```
 
 
+When making a comparative study on the international level, it seems to be most natural to control for world region and year. However, despite many of the forerunners being European countries, the academic literature does not seem to suggest a clear tendency what world regions perform worse or better than others.
 
-## R Markdown
+Likewise, because our data is taken from an Index that informs over the position of countries *relative* to other countries and not in absolute terms with regards to climate policy performance, over the years the mean values of policy performance scores remain stable, despite climate policies becoming more progressive over time.[^1]
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+[^1]: Unfortunately, no index that informed about climate policy performance in a similar manner as the Climate Change Performance Index published by Germanwatch, but in absolute terms, could be found.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+Thus, the model will assess the influence of female representativity on Climate Policy Performance, without controlling for region or year.
 
-```{r cars}
-summary(cars)
+# Results
+```{r Fitting the model, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+
+stan_model2 <- stan_glm(data = data, PolicyScore ~ PercentWomen, 
+                        prior = normal(location = 0.5, scale = 0.5, autoscale = TRUE))
+
+summary(stan_model2)
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r Regression output, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+tidy(stan_model2, conf.int = TRUE, conf.level = 0.90) %>%
+  mutate(term = c("Intercept", 
+                  "Percentage Women")) %>% 
+  mutate_if(is.numeric, round, 3) %>% 
+  rename(Term = term, Estimate = estimate,
+         `Standard Deviation` = std.error, 
+         `Lower 90% CI` = conf.low, `Upper 90% CI` = conf.high)
 ```
+| Term             | Estimate | Standard Deviation | Lower 90% CI | Upper 90% CI |
+| ---------------- | -------- | ------------------ | ------------ | ------------ |
+| Intercept        | 27.870   | 4.781              | 19.845       | 35.822       |
+| Percentage Women | 88.955   | 17.437             | 60.631       | 118.238      |
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+
+# References
+
+Missing: mccrightEffectsGenderClimate2010

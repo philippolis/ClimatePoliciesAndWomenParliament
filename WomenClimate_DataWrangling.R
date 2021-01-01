@@ -125,7 +125,7 @@ data$Region <- gsub("\\<North America\\>", "Americas", data$Region)
 data$Region <- gsub("\\<South Asia, East Asia & Pacific, East Asia & Pacific\\>", "South Asia, East Asia & Pacific", data$Region)
 
 ## Exporting data to csv
-write.csv(data,"data.csv", row.names = FALSE)
+write.csv(data,"WomenClimate_Data.csv", row.names = FALSE)
 
 # Visualizing the relationship
 ggplot(data = data) +
