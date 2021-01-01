@@ -1,0 +1,45 @@
+---
+title: "Women in Parliament and Climate Policy Performance"
+author: "Philipp Holz"
+#date: "`r format(Sys.time(), '%d %B, %Y')`"
+date: "02 January 2021"
+output: 
+  pdf_document:
+    toc: true
+    latex_engine: xelatex
+    fig_width: 6
+    fig_height: 4
+bibliography: References.json
+---
+
+```{r, echo=FALSE, message = FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, echo = FALSE, dev = "cairo_pdf")
+```
+
+```{r Libraries}
+# Loading the libraries
+library(rstanarm)
+library(extrafont)
+loadfonts()
+```
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
