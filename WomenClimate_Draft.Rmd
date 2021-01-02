@@ -7,8 +7,8 @@ output:
   pdf_document:
     toc: true
     latex_engine: xelatex
-    fig_width: 6
-    fig_height: 4
+    fig_width: 5
+    fig_height: 3
 mainfont: Calibri Light
 fontsize: 12pt
 bibliography: References.json
@@ -43,7 +43,7 @@ H\textsubscript{0}: The share of women in national parliaments **has no** influe
 
 H\textsubscript{a}: The share of women in national parliaments **has** influence on the climate policy performance of a country.
 
-This analysis combines data from the Inter-Parliamentary Union on women in parliaments [@inter-parliamentaryunionWomenParliamentsWorld2021] and data from the Climate Change Performance Index published inter alia by Germanwatch [@burckClimateChangePerformance2017, @burckClimateChangePerformance2018, @burckClimateChangePerformance2019]. For the analysis, data for the years 2018 to 2020 was combined and only the Policy Performance part of the Climate Change Performance Index was used, as this is were individual influence is greatest.
+This analysis combines data from the Inter-Parliamentary Union on women in parliaments [@inter-parliamentaryunionWomenParliamentsWorld2021] and data from the Climate Change Performance Index published inter alia by Germanwatch [@burckClimateChangePerformance2017; @burckClimateChangePerformance2018; @burckClimateChangePerformance2019]. For the analysis, data for the years 2018 to 2020 was combined and only the Policy Performance part of the Climate Change Performance Index was used, as this is were individual influence is greatest.
 
 In the analysis, the relationship between the share of women in national parliaments and climate policy performance is additionally corrected for the years 2018, 2019 and 2020 and for world region.
 
@@ -135,7 +135,7 @@ The R²-statistic can give us more information on the predictive value of the mo
 ```{r R-squared, echo=FALSE, message=FALSE, warning=FALSE, fig.align="center"}
 # Visualising the R²-distribution
 ggplot(data = data.frame(bayes_R2(stan_model2))) + 
-  geom_histogram(aes(x=bayes_R2.stan_model2.), size = 1, color = "#0072B2", fill = "white") + 
+  geom_histogram(aes(x=bayes_R2.stan_model2.), size = 0.5, color = "#0072B2", fill = "white") + 
   labs(title="R²-Statistic",
        x="Variance in Policy Performance explained by Model", 
        y="Probability") +
@@ -148,8 +148,16 @@ ggplot(data = data.frame(bayes_R2(stan_model2))) +
     axis.ticks.y = element_blank())
 ```
 
+# Model Predictions
+The parliaments of the United Kingdom currently have a share of only 28.9% women.[@inter-parliamentaryunionWomenParliamentsWorld2021] We can use our model to calculate a **14.3%-chance** that the United Kingdom - or any other country - would be at the top of the climate policy performance index, if its national parliaments had 50% women.
+
+```{r Prediction, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+prediction <- posterior_predict(stan_model2, newdata = data.frame(PercentWomen = 0.5))
+
+sum((data.frame(prediction))$X1 > 98.7) / length((data.frame(prediction))$X1)
+```
+
+# Conclusion
 
 
 # References
-
-Missing: mccrightEffectsGenderClimate2010

@@ -1,7 +1,6 @@
 library(ggplot2)
 library(rstanarm)
-library(extrafont)
-loadfonts()
+
 
 data <- read.csv("WomenClimate_Data.csv")
 
@@ -105,4 +104,21 @@ ggplot(data = data.frame(bayes_R2(stan_model2))) +
     axis.ticks.y = element_blank())
   )
 
+## Making a model prediction
+prediction <- posterior_predict(stan_model2, newdata = data.frame(PercentWomen = 0.5))
 
+ggplot(data = data.frame(prediction)) + 
+  geom_density(aes(x=X1), size = 1, color = "#0072B2") + 
+  labs(title="Prediction for the Climate Policy Performance of a Country\nwith a Genderbalanced Parliament",
+       x="Climate Policy Performance Score", 
+       y="Probability") +
+  theme(
+    plot.title = element_text(size = 11, face = "bold"),
+    text=element_text(size = 11),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank())
+)
+
+head(data.frame(prediction))
+
+sum((data.frame(prediction))$X1 > 98.7) / length((data.frame(prediction))$X1)
