@@ -1,0 +1,177 @@
+---
+title: "Women in Parliament and Climate Policy Performance"
+author: "Philipp Holz"
+#date: "`r format(Sys.time(), '%d %B, %Y')`"
+date: "03 January 2021"
+output: 
+  pdf_document:
+    toc: true
+    latex_engine: xelatex
+    fig_width: 4.5
+    fig_height: 2.5
+mainfont: Calibri Light
+fontsize: 12pt
+bibliography: References.json
+---
+
+```{r, echo=FALSE, message = FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, echo = FALSE, dev = "cairo_pdf")
+```
+
+```{r Libraries}
+# Loading the libraries
+library(ggplot2)
+library(rstanarm)
+library(dplyr)
+library(tidyr)
+library(bayesplot)
+library(extrafont)
+loadfonts()
+```
+
+```{r Loading the Data}
+data <- read.csv("WomenClimate_Data.csv")
+```
+
+# Introduction
+
+Climate change is what is commonly referred to as a wicked problem - a problem that does not pertain to one particular domain and instead requires the conjoint action of many different stakeholders.[see @incroperaPreface2015] Therefore, solving it makes it necessary to rethink society from the bottom up. One way to do this is to look at how different socially-constructed gender identities affect the perception of climate change and the action against climate change. Already, the academic literature has shown on various occasions that "women express slightly greater concern about climate change than do men"[@mccrightEffectsGenderClimate2010]. But how does greater influence of women then affect the action against climate change? The following analysis tries to answer this question by looking at how well different countries perform in issuing climate change policies dependent on what percentage of women are in positions of power, approximated here as the percentage of women in parliament.
+` `  
+` `
+  
+Thus the hypotheses tested are:
+
+H\textsubscript{0}: The share of women in national parliaments **has no** influence on the climate policy performance of a country.
+
+H\textsubscript{a}: The share of women in national parliaments **has** influence on the climate policy performance of a country.
+
+This analysis combines data from the Inter-Parliamentary Union on the percentage women in national parliaments around the world [@inter-parliamentaryunionWomenParliamentsWorld2021] and data from the Climate Change Performance Index published annually by Germanwatch [@burckClimateChangePerformance2017; @burckClimateChangePerformance2018; @burckClimateChangePerformance2019]. For the analysis, data for the years 2018 to 2020 was combined and only the Policy Performance part of the Climate Change Performance Index was used, as this is were individual influence is greatest.
+
+The following diagram shows that from a first visual assessment there seems to be a moderately strong, positive correlation between the percentage of women in parliament and policy performance. However, there also seems to be a considerable error-term, which is why a Bayesian regression analysis will be used to help us determine a credible interval of the underlying parameter for the influence of women in parliament on climate policy performance.
+
+```{r Bivariate plot, message=FALSE, warning=FALSE, fig.align = "center"}
+ggplot(data = data) +
+  geom_point(aes(x = PercentWomen, y = PolicyScore), alpha = 0.5) +
+  geom_smooth(aes(x = PercentWomen, y = PolicyScore), method = "lm", color = "#0072B2") +
+  xlab("Share of Women in Parliament") +
+  ylab("Climate Policy Index") +
+  scale_x_continuous(labels = scales::percent_format(accuracy = 1), 
+                     breaks = scales::pretty_breaks(n = 6)) +
+  ggtitle("Share of Women in Parliament\nand Climate Policy Index") +
+  theme(
+     plot.title = element_text(size = 11, face = "bold"),
+     text=element_text(size = 11)
+  )
+```
+
+# Bayesian Analysis
+## Prior Distribution
+As mentioned before, the academic literature makes it plausible to assume a positive relationship between the percentage of women in parliament and policy performance. This means, we can set our prior to a Normal[0.5, 0.5]-probability distribution as visualized in the chart below.
+
+```{r Prior distribution, message=FALSE, warning=FALSE, fig.align= "center"}
+# Histogram of PercentWomen-prior of normal[0.5,0.5]
+
+p1 <- data.frame(dist = rnorm(100000, 0.5, 0.5))
+
+ggplot(p1) + geom_density(aes(x=dist), size = 1, color = "#0072B2", fill = "#cce2ef") + 
+  labs(title="Prior for Percentage of Women in Parliament",
+       x="Beta value", 
+       y="Probability") +
+  scale_x_continuous(breaks=seq(-5,3,1), limits = c(-2.5, 2.5)) +
+  theme(
+    plot.title = element_text(size = 11, face = "bold"),
+    text=element_text(size = 11)
+  )
+```
+
+Additionally, it seems to be most natural to control the relationship of women in parliament and climate policy performance for world region. However, despite many of the forerunners being European countries, the academic literature does not seem to suggest a clear tendency as to which world regions perform worse or better than others. This is confirmed by our data as can be seen in the table below.
+
+| Region                          | Mean |
+| ------------------------------- | ---- |
+| Americas                        | 49.1 |
+| Europe & Central Asia           | 53.0 |
+| Middle East & Africa            | 46.6 |
+| South Asia, East Asia & Pacific | 46.5 |
+
+Likewise it would make sense to control for the influence of time. However, because our data is taken from an Index that informs over the position of countries *relative* to other countries and not in absolute terms per year, the mean values of policy performance scores remain stable over time, despite climate policies becoming more progressive over time.[^1]
+
+[^1]: Unfortunately, no index that informed about climate policy performance in a similar manner as the Climate Change Performance Index published by Germanwatch, but in absolute terms, could be found.
+
+Thus, the model will assess the influence of the share of women in parliament on climate policy performance, without controlling for region or year.
+
+## Posterior Distribution
+Fitting the model with a Normal[0.5, 0.5]-probability distribution[^2] yields the following results. The coefficient is positive, indicating that a one percentage-point increase of women in a given parliament is associated with a predicted 0.89 point increase in the climate policy index. The 90% credible interval for this coefficient extends from 0.61 point- to 1.18 point-increase per extra percentage-point of women in parliament.
+
+[^2]: The scale is automatically adjusted, so that the adjusted prior is a Normal[51, 65].
+
+```{r Fitting the model, message=FALSE, warning=FALSE, include=FALSE}
+
+stan_model2 <- stan_glm(data = data, PolicyScore ~ PercentWomen, 
+                        prior = normal(location = 0.5, scale = 0.5, autoscale = TRUE))
+
+prior_summary(stan_model2)
+```
+
+```{r Regression output, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+tidy(stan_model2, conf.int = TRUE, conf.level = 0.90) %>%
+  mutate(term = c("Intercept", 
+                  "Percentage Women")) %>% 
+  mutate_if(is.numeric, round, 3) %>% 
+  rename(Term = term, Estimate = estimate,
+         `Standard Deviation` = std.error, 
+         `Lower 90% CI` = conf.low, `Upper 90% CI` = conf.high)
+```
+| Term             | Estimate | Standard Deviation | Lower 90% CI | Upper 90% CI |
+| ---------------- | -------- | ------------------ | ------------ | ------------ |
+| Intercept        | 27.870   | 4.781              | 19.845       | 35.822       |
+| Percentage Women | 88.955   | 17.437             | 60.631       | 118.238      |
+
+Additionally, we can visualize the posterior distribution with a 90% credible interval. The posterior distribution confirms the assumption of a positive relationship we set in our prior.
+
+```{r Posterior Distribution, message=FALSE, warning=FALSE, fig.align="center"}
+mcmc_areas(stan_model2,
+           pars = "PercentWomen",
+           prob = 0.90) + 
+  labs(
+    title = "Posterior Distribution for the Coefficient of\nPercentage of Women in Parliament",
+    subtitle = "with medians and 90% credible intervals"
+  ) +
+  panel_bg(fill = "gray95", color = NA) +
+  grid_lines(color = "white") +
+  ggplot2::theme(
+    plot.title = element_text(size = 11, face = "bold"),
+    text=element_text(size = 11, family = "Calibri")
+  )
+```
+
+The R²-statistic can give us more information on the predictive value of the model. It shows us that the model typically explains between 8% and 18% of the variance in climate policy performance.
+
+```{r R-squared, echo=FALSE, message=FALSE, warning=FALSE, fig.align="center"}
+# Visualising the R²-distribution
+ggplot(data = data.frame(bayes_R2(stan_model2))) + 
+  geom_histogram(aes(x=bayes_R2.stan_model2.), size = 0.5, color = "black", fill = "#cce2ef") + 
+  labs(title="R²-Statistic",
+       x="Variance in Policy Performance explained by Model", 
+       y="Probability") +
+  scale_x_continuous(labels = scales::percent_format(accuracy = 1), 
+                     breaks = scales::pretty_breaks(n = 6)) +
+  theme(
+    plot.title = element_text(size = 11, face = "bold"),
+    text=element_text(size = 11),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank())
+```
+
+# Model Predictions
+The parliaments of the United Kingdom currently have a share of only 28.9% women.[@inter-parliamentaryunionWomenParliamentsWorld2021] We can use our model to calculate a **14.3%-chance** that the United Kingdom - or any other country - would be at the top of the climate policy performance index, if its national parliaments had 50% women (disregarding their current position in the ranking).
+
+```{r Prediction, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+prediction <- posterior_predict(stan_model2, newdata = data.frame(PercentWomen = 0.5))
+
+sum((data.frame(prediction))$X1 > 98.7) / length((data.frame(prediction))$X1)
+```
+
+# Conclusion
+This analysis has shown the moderately strong, positive influence that the share of women in parliament have on a country's climate policy performance. With a 90%-credible interval of between a 0.61 point- to a 1.18 point-increase in climate policy performance per extra percentage-point of women in parliament the posterior distribution confirms the expectations we set in our prior. Thus, this analysis supports the call for increased attention to the interplay of gender and climate change.
+
+# References
