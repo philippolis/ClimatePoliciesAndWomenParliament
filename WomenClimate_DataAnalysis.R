@@ -1,5 +1,7 @@
 library(ggplot2)
 library(rstanarm)
+library(bayesplot)
+library(dplyr)
 
 
 data <- read.csv("WomenClimate_Data.csv")
@@ -18,6 +20,9 @@ ggplot(data = data) +
      plot.title = element_text(size = 11, face = "bold"),
      text=element_text(family="CMU Sans Serif")
   )
+
+# Including Region?
+region_data <- data %>% group_by(Region) %>% summarize(Mean = round(mean(PolicyScore, na.rm = TRUE),1))
 
 # Frequentist analysis ----
 lm_model <- lm(data = data, PolicyScore ~ PercentWomen + factor(Year) + Region)
@@ -49,21 +54,21 @@ tidy(stan_model1, conf.int = TRUE, conf.level = 0.90) %>%
 
 p1 <- data.frame(dist = rnorm(100000, 0.5, 0.5))
 
-ggplot(p1) + geom_density(aes(x=dist), size = 1) + 
+ggplot(p1) + geom_density(aes(x=dist), size = 1, color = "#0072B2", fill = "#cce2ef") + 
   labs(title="Prior for Percentage of Women in Parliament",
        x="Beta value", 
        y="Probability") +
   scale_x_continuous(breaks=seq(-5,3,1), limits = c(-2.5, 2.5)) +
   theme(
-    plot.title = element_text(size = 12, face = "bold"),
-    text=element_text(family="CMU Sans Serif", size = 12)
+    plot.title = element_text(size = 11, face = "bold"),
+    text=element_text(size = 11)
   )
 
 ### Analysis
 stan_model2 <- stan_glm(data = data, PolicyScore ~ PercentWomen, 
                         prior = normal(location = 0.5, scale = 0.5, autoscale = TRUE))
 
-summary(stan_model2)
+prior_summary(stan_model2)
 
 tidy(stan_model2, conf.int = TRUE, conf.level = 0.90) %>%
   mutate(term = c("Intercept", 
@@ -81,8 +86,28 @@ mcmc_areas(stan_model2,
            pars = "PercentWomen",
            prob = 0.90) + 
   ggplot2::labs(
-    title = "Posterior Distribution for Percent Women in Parliament",
-    subtitle = "90% Credible Intervals")
+    title = "Posterior Distribution for Coefficient for\nPercent Women in Parliament",
+    subtitle = "90% Credible Intervals"
+    ) +
+  panel_bg(fill = "gray95", color = NA) +
+  grid_lines(color = "white")
+  
+mcmc_areas(stan_model2,
+           pars = "PercentWomen",
+           prob = 0.90) + 
+  labs(
+    title = "Posterior Distribution for the Coefficient of\nPercentage of Women in Parliament",
+    subtitle = "with medians and 90% credible intervals"
+  ) +
+  panel_bg(fill = "gray95", color = NA) +
+  grid_lines(color = "white") +
+  ggplot2::theme(
+    plot.title = element_text(size = 11, face = "bold"),
+    text=element_text(size = 11, family = "Calibri")
+  )
+
+ppc_dens_overlay(y = stan_model2$y,
+                 yrep = posterior_predict(stan_model2, draws = 50))
 
 ## Getting the R² Statistic
 ss_res2 <- var(residuals(stan_model2))
