@@ -126,7 +126,7 @@ tidy(stan_model2, conf.int = TRUE, conf.level = 0.90) %>%
 | Intercept        | 27.870   | 4.781              | 19.845       | 35.822       |
 | Percentage Women | 88.955   | 17.437             | 60.631       | 118.238      |
 
-Additionally, we can visualize the posterior distribution with a 90% credible interval. The posterior distribution confirms the assumption of a positive relationship we set in our prior.
+Additionally, we can visualize the posterior distribution with a 90% credible interval. The posterior distribution confirms the assumption of a positive relationship we set in our prior, however with increased strength, as the mean shifted from 51 to 89.
 
 ```{r Posterior Distribution, message=FALSE, warning=FALSE, fig.align="center"}
 mcmc_areas(stan_model2,

@@ -85,16 +85,6 @@ prior_summary(stan_model2)
 mcmc_areas(stan_model2,
            pars = "PercentWomen",
            prob = 0.90) + 
-  ggplot2::labs(
-    title = "Posterior Distribution for Coefficient for\nPercent Women in Parliament",
-    subtitle = "90% Credible Intervals"
-    ) +
-  panel_bg(fill = "gray95", color = NA) +
-  grid_lines(color = "white")
-  
-mcmc_areas(stan_model2,
-           pars = "PercentWomen",
-           prob = 0.90) + 
   labs(
     title = "Posterior Distribution for the Coefficient of\nPercentage of Women in Parliament",
     subtitle = "with medians and 90% credible intervals"
@@ -105,9 +95,6 @@ mcmc_areas(stan_model2,
     plot.title = element_text(size = 11, face = "bold"),
     text=element_text(size = 11, family = "Calibri")
   )
-
-ppc_dens_overlay(y = stan_model2$y,
-                 yrep = posterior_predict(stan_model2, draws = 50))
 
 ## Getting the R² Statistic
 ss_res2 <- var(residuals(stan_model2))
