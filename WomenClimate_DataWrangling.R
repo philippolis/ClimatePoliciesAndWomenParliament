@@ -6,9 +6,9 @@ library(tabulizer)
 
 # Women in Parliament ----
 ## Loading data
-WomenParliament_2018 <- read.csv("WomenParliament_20171201.csv", sep = ";")
-WomenParliament_2019 <- read.csv("WomenParliament_20181201.csv", sep = ";")
-WomenParliament_2020 <- read.csv("WomenParliament_20191201.csv", sep = ";")
+WomenParliament_2018 <- read.csv("data/WomenParliament_20171201.csv", sep = ";")
+WomenParliament_2019 <- read.csv("data/WomenParliament_20181201.csv", sep = ";")
+WomenParliament_2020 <- read.csv("data/WomenParliament_20191201.csv", sep = ";")
 
 ## Equalizing Country columns
 for(i in 1:nrow(WomenParliament_2018)) {
@@ -125,7 +125,7 @@ data$Region <- gsub("\\<North America\\>", "Americas", data$Region)
 data$Region <- gsub("\\<South Asia, East Asia & Pacific, East Asia & Pacific\\>", "South Asia, East Asia & Pacific", data$Region)
 
 ## Exporting data to csv
-write.csv(data,"WomenClimate_Data.csv", row.names = FALSE)
+write.csv(data,"data/WomenClimate_Data.csv", row.names = FALSE)
 
 # Visualizing the relationship
 ggplot(data = data) +

@@ -2,9 +2,9 @@ library(ggplot2)
 library(rstanarm)
 library(bayesplot)
 library(dplyr)
+library(broom.mixed)
 
-
-data <- read.csv("WomenClimate_Data.csv")
+data <- read.csv("data/WomenClimate_Data.csv")
 
 # Bivariate plot ----
 
@@ -113,8 +113,8 @@ ggplot(data = data.frame(bayes_R2(stan_model2))) +
     plot.title = element_text(size = 11, face = "bold"),
     text=element_text(size = 11),
     axis.text.y = element_blank(),
-    axis.ticks.y = element_blank())
-  )
+    axis.ticks.y = element_blank()
+    )
 
 ## Making a model prediction
 prediction <- posterior_predict(stan_model2, newdata = data.frame(PercentWomen = 0.5))
@@ -128,8 +128,8 @@ ggplot(data = data.frame(prediction)) +
     plot.title = element_text(size = 11, face = "bold"),
     text=element_text(size = 11),
     axis.text.y = element_blank(),
-    axis.ticks.y = element_blank())
-)
+    axis.ticks.y = element_blank()
+    )
 
 head(data.frame(prediction))
 
